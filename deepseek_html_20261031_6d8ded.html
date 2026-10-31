@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0e17">
+  <title>Намаз — Время</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: #0a0e17;
+      color: #e8edf5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px 100px;
+      background-image:
+        radial-gradient(circle at 15% 0%, rgba(56, 189, 248, 0.08), transparent 40%),
+        radial-gradient(circle at 85% 100%, rgba(16, 185, 129, 0.06), transparent 40%);
+    }
+    h1 { font-size: 22px; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.5px; }
+    .sub { font-size: 13px; color: #7c8ba1; margin-bottom: 20px; text-align: center; }
+
+    .card {
+      width: 100%; max-width: 420px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .input-row { display: flex; gap: 8px; }
+    input {
+      flex: 1;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #38bdf8; }
+    input::placeholder { color: #5a6b7f; }
+
+    button {
+      border: none;
+      border-radius: 12px;
+      padding: 12px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+      color: #04121f;
+      background: linear-gradient(135deg, #38bdf8, #22d3ee);
+    }
+    button:active { transform: scale(0.97); }
+    button.ghost {
+      background: rgba(255,255,255,0.06);
+      color: #e8edf5;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    button:disabled { opacity: 0.4; pointer-events: none; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .btn-row button { flex: 1; min-width: 120px; }
+
+    .status {
+      font-size: 12px;
+      color: #7c8ba1;
+      margin-top: 10px;
+      text-align: center;
+      line-height: 1.5;
+      min-height: 18px;
+    }
+
+    .times { list-style: none; }
+    .times li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 16px;
+    }
+    .times li:last-child { border-bottom: none; }
+    .times .name { display: flex; align-items: center; gap: 10px; color: #b0c0d4; }
+    .times .name .ico { font-size: 20px; width: 26px; text-align: center; }
+    .times .time { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 18px; }
+    .times li.next {
+      background: rgba(56, 189, 248, 0.1);
+      border-radius: 12px;
+      border-bottom: none;
+      margin: 4px 0;
+      padding: 14px 10px;
+    }
+    .times li.next .name { color: #38bdf8; font-weight: 700; }
+    .times li.next .time { color: #38bdf8; }
+    .badge {
+      font-size: 10px;
+      background: #38bdf8;
+      color: #04121f;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 800;
+      margin-left: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .install-hint {
+      display: none;
+      font-size: 12px;
+      color: #fbbf24;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .install-hint.show { display: block; }
+
+    .footer {
+      font-size: 11px;
+      color: #3d4d5f;
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🕌 Время намаза</h1>
+  <div class="sub">Уведомления приходят, даже когда приложение закрыто</div>
+
+  <div class="card">
+    <div class="input-row">
+      <input id="city" type="text" placeholder="Город (например, Казань)" autocomplete="off">
+      <button id="btnCity">Найти</button>
+    </div>
+    <div class="btn-row">
+      <button id="btnGeo" class="ghost">📍 Моё местоположение</button>
+      <button id="btnNotify">🔔 Включить уведомления</button>
+    </div>
+    <div id="status" class="status">Введи город или нажми «Моё местоположение»</div>
+    <div id="installHint" class="install-hint"></div>
+  </div>
+
+  <div class="card" id="timesCard" style="display:none;">
+    <ul class="times" id="timesList"></ul>
+  </div>
+
+  <div class="footer">
+    Расчёт по методу Muslim World League (MWL)<br>
+    Данные: aladhan.com · Точность зависит от выбранного города
+  </div>
+
+  <script>
+    const state = {
+      city: localStorage.getItem('prayer_city') || '',
+      lat: parseFloat(localStorage.getItem('prayer_lat')) || null,
+      lng: parseFloat(localStorage.getItem('prayer_lng')) || null,
+      times: null,
+      dateKey: '',
+      notifyOn: localStorage.getItem('prayer_notify') === '1',
+    };
+
+    const PRAYERS = [
+      { key: 'Fajr',    label: 'Фаджр',    ico: '🌅' },
+      { key: 'Dhuhr',   label: 'Зухр',     ico: '☀️' },
+      { key: 'Asr',     label: 'Аср',      ico: '🌤' },
+      { key: 'Maghrib', label: 'Магриб',   ico: '🌇' },
+      { key: 'Isha',    label: 'Иша',      ico: '🌙' },
+    ];
+
+    const METHOD = 3; // Muslim World League
+
+    const $ = id => document.getElementById(id);
+
+    // ---------- helpers ----------
+    function setStatus(msg) { $('status').textContent = msg; }
+
+    function todayKey() {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+
+    // ---------- API ----------
+    async function fetchByCity(city) {
+      const url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=&method=${METHOD}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.code !== 200) throw new Error(json.data || 'Город не найден');
+      return json.data;
+    }
+
+    async function fetchByCoords(lat, lng) {
+      const url = `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lng}&method=${METHOD}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.code !== 200) throw new Error('Ошибка геолокации');
+      return json.data;
+    }
+
+    // ---------- parse time "HH:MM" -> Date today ----------
+    function timeToDate(hhmm) {
+      const [h, m] = hhmm.split(':').map(Number);
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d;
+    }
+
+    function fmt(hhmm) {
+      // Aladhan возвращает "04:32 (MSK)" или "04:32"
+      return hhmm.split(' ')[0];
+    }
+
+    // ---------- render ----------
+    function render(data) {
+      const list = $('timesList');
+      list.innerHTML = '';
+      const now = new Date();
+      let nextKey = null;
+      let nextDate = null;
+
+      PRAYERS.forEach(p => {
+        const raw = data.timings[p.key];
+        if (!raw) return;
+        const clean = fmt(raw);
+        const dt = timeToDate(clean);
+        if (dt > now && (!nextDate || dt < nextDate)) {
+          nextDate = dt;
+          nextKey = p.key;
+        }
+      });
+
+      PRAYERS.forEach(p => {
+        const raw = data.timings[p.key];
+        if (!raw) return;
+        const clean = fmt(raw);
+        const li = document.createElement('li');
+        if (p.key === nextKey) li.classList.add('next');
+        li.innerHTML = `
+          <span class="name"><span class="ico">${p.ico}</span>${p.label}${p.key === nextKey ? '<span class="badge">следующий</span>' : ''}</span>
+          <span class="time">${clean}</span>
+        `;
+        list.appendChild(li);
+      });
+
+      $('timesCard').style.display = 'block';
+    }
+
+    // ---------- notifications ----------
+    async function scheduleNotifications(data) {
+      if (!('serviceWorker' in navigator)) {
+        setStatus('Уведомления не поддерживаются этим браузером');
+        return;
+      }
+
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        setStatus('Разрешение на уведомления не выдано. Включи его в настройках сайта.');
+        state.notifyOn = false;
+        localStorage.setItem('prayer_notify', '0');
+        return;
+      }
+
+      state.notifyOn = true;
+      localStorage.setItem('prayer_notify', '1');
+
+      const reg = await navigator.serviceWorker.ready;
+      const now = Date.now();
+
+      for (const p of PRAYERS) {
+        const raw = data.timings[p.key];
+        if (!raw) continue;
+        const clean = fmt(raw);
+        const dt = timeToDate(clean);
+        const ts = dt.getTime();
+
+        // Уведомляем только о будущих намазах (и не раньше чем через 10 секунд, чтобы не спамить)
+        if (ts > now + 10_000) {
+          try {
+            if ('showTrigger' in Notification.prototype) {
+              // Notification Triggers API (Android Chrome)
+              await reg.showNotification(`🕌 ${p.label}`, {
+                body: `Время намаза: ${clean}`,
+                tag: `prayer-${p.key}-${state.dateKey}`,
+                showTrigger: new TimestampTrigger(ts),
+                icon: 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕌</text></svg>',
+              });
+            } else {
+              // Fallback: обычное уведомление через setTimeout (работает, пока вкладка открыта)
+              const delay = ts - now;
+              if (delay < 2_147_483_647) {
+                setTimeout(() => {
+                  reg.showNotification(`🕌 ${p.label}`, {
+                    body: `Время намаза: ${clean}`,
+                    tag: `prayer-${p.key}-${state.dateKey}`,
+                  });
+                }, delay);
+              }
+            }
+          } catch (e) {
+            console.warn('schedule failed', p.key, e);
+          }
+        }
+      }
+      setStatus(`Уведомления включены на сегодня (${state.dateKey}). Не закрывай приложение полностью до следующего намаза.`);
+    }
+
+    // ---------- core ----------
+    async function loadAndRender(data) {
+      state.times = data.timings;
+      state.dateKey = todayKey();
+      localStorage.setItem('prayer_date', state.dateKey);
+      render(data);
+
+      if (state.notifyOn) {
+        await scheduleNotifications(data);
+      }
+    }
+
+    async function loadByCity(city) {
+      setStatus('Ищу город…');
+      try {
+        const data = await fetchByCity(city);
+        state.city = city;
+        state.lat = null; state.lng = null;
+        localStorage.setItem('prayer_city', city);
+        localStorage.removeItem('prayer_lat');
+        localStorage.removeItem('prayer_lng');
+        await loadAndRender(data);
+        setStatus(`Город: ${city}. Время намаза на сегодня загружено.`);
+      } catch (e) {
+        setStatus('Ошибка: ' + (e.message || 'не удалось найти город'));
+      }
+    }
+
+    async function loadByGeo() {
+      if (!navigator.geolocation) {
+        setStatus('Геолокация не поддерживается');
+        return;
+      }
+      setStatus('Определяю местоположение…');
+      navigator.geolocation.getCurrentPosition(async pos => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          state.lat = latitude; state.lng = longitude;
+          localStorage.setItem('prayer_lat', latitude);
+          localStorage.setItem('prayer_lng', longitude);
+          localStorage.removeItem('prayer_city');
+          const data = await fetchByCoords(latitude, longitude);
+          await loadAndRender(data);
+          setStatus('Время намаза загружено по твоим координатам.');
+        } catch (e) {
+          setStatus('Ошибка: ' + (e.message || 'не удалось получить время'));
+        }
+      }, err => {
+        setStatus('Не удалось определить местоположение. Введи город вручную.');
+      }, { enableHighAccuracy: false, timeout: 10000 });
+    }
+
+    // ---------- init ----------
+    async function init() {
+      $('city').value = state.city || '';
+      $('btnCity').onclick = () => {
+        const c = $('city').value.trim();
+        if (c) loadByCity(c);
+      };
+      $('btnGeo').onclick = loadByGeo;
+      $('btnNotify').onclick = async () => {
+        if (!state.times) {
+          setStatus('Сначала загрузи время намаза (город или геолокация).');
+          return;
+        }
+        await scheduleNotifications({ timings: state.times });
+      };
+
+      if (state.notifyOn) {
+        $('btnNotify').textContent = '🔔 Уведомления включены';
+      }
+
+      // Если уже есть сохранённые данные — грузим
+      if (state.lat && state.lng) {
+        try {
+          const data = await fetchByCoords(state.lat, state.lng);
+          await loadAndRender(data);
+          setStatus('Время намаза обновлено.');
+        } catch (e) { setStatus('Не удалось обновить. Введи город.'); }
+      } else if (state.city) {
+        await loadByCity(state.city);
+      }
+
+      // Подсказка об установке
+      const hint = $('installHint');
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+      if (!isStandalone) {
+        if (isIOS) {
+          hint.textContent = '📲 Установи на iPhone: нажми «Поделиться» в Safari → «На экран «Домой»». После этого уведомления будут работать как в приложении.';
+        } else {
+          hint.textContent = '📲 Установи на Android: меню Chrome (⋮) → «Установить приложение» или «Добавить на главный экран».';
+        }
+        hint.classList.add('show');
+      }
+
+      // Регистрация service worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>
